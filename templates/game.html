@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        td {
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            font-size: 36px;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        td:hover {
+            background-color: #ddd;
+        }
+
+        td:active {
+            background-color: #ccc;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        button:active {
+            background-color: #777;
+        }
+
+        #reset {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    <table id="board">
+        <tr>
+            <td data-index="0"></td>
+            <td data-index="1"></td>
+            <td data-index="2"></td>
+        </tr>
+        <tr>
+            <td data-index="3"></td>
+            <td data-index="4"></td>
+            <td data-index="5"></td>
+        </tr>
+        <tr>
+            <td data-index="6"></td>
+            <td data-index="7"></td>
+            <td data-index="8"></td>
+        </tr>
+    </table>
+    <button id="reset">Reset Game</button>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const index = cell.getAttribute('data-index');
+                    fetch('/move', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ index: index }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            updateBoard(data.board);
+                            if (data.winner) {
+                                setTimeout(() => {
+                                    if (data.winner === 'Tie') {
+                                        alert('The game is a tie!');
+                                    } else {
+                                        alert(`Winner: ${data.winner == 1 ? 'X' : 'O'}`);
+                                    }
+                                    document.getElementById('reset').style.display = 'block';
+                                }, 100);
+                            } else if (data.next_player === 'computer') {
+                                setTimeout(() => {
+                                    fetch('/computer_move', {
+                                        method: 'POST',
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        updateBoard(data.board);
+                                        if (data.winner) {
+                                            setTimeout(() => {
+                                                if (data.winner === 'Tie') {
+                                                    alert('The game is a tie!');
+                                                } else {
+                                                    alert(`Winner: ${data.winner == 1 ? 'X' : 'O'}`);
+                                                }
+                                                document.getElementById('reset').style.display = 'block';
+                                            }, 100);
+                                        }
+                                    });
+                                }, 1000); // 1 second delay
+                            }
+                        }
+                    });
+                });
+            });
+
+            document.getElementById('reset').addEventListener('click', () => {
+                fetch('/reset', {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    updateBoard(data.board);
+                    document.getElementById('reset').style.display = 'none';
+                });
+            });
+        });
+
+        function updateBoard(board) {
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                const index = cell.getAttribute('data-index');
+                cell.textContent = board[index] === 1 ? 'X' : board[index] === -1 ? 'O' : '';
+            });
+        }
+    </script>
+</body>
+</html>
